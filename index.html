@@ -54,25 +54,6 @@
       import * as niivue from "./node_modules/@niivue/niivue/dist/index.js";
       import * as ort from "./node_modules/onnxruntime-web/dist/ort.all.mjs";
 
-      opacitySlider.oninput = function () {
-        nv1.setOpacity(1, this.value / 255);
-      };
-      dragDrop.onchange = function () {
-        nv1.opts.dragMode = this.selectedIndex;
-      };
-      function handleLocationChange(data) {
-        document.getElementById("location").innerHTML =
-          "&nbsp;&nbsp;" + data.string;
-      }
-      aboutBtn.onclick = function () {
-        window.alert(
-          "Illustrates reading and writing voxel intensities with getVolumeData and getVolumeData. These functions allow custom image processing."
-        );
-      };
-      saveBtn.onclick = function () {
-        nv1.volumes[1].saveToDisk("Custom.nii");
-      };
-
       function convert_to_png(uint8array, width, height, flip) {
         let offscreen = window.document.createElement('canvas');
         offscreen.width = width;
@@ -131,20 +112,6 @@
 
         }
 
-      async function insertImageToCanvas(base64Image) {
-        const canvas = document.getElementById('gl1');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-
-        img.onload = function () {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-        };
-
-        img.src = base64Image; // Assign base64 image to the img object
-      }
-
       async function send_http_post(url, data) {
         return new Promise((resolve, reject) => {
           let xhr = new XMLHttpRequest();
@@ -166,23 +133,7 @@
         if (nv1.volumes.length !== 1) return;
         let overlayVolume = await nv1.volumes[0].clone();
         overlayVolume.zeroImage();
-        overlayVolume.colormap = "actc";
-        overlayVolume.opacity = 0.5;
         nv1.addVolume(overlayVolume);
-      }
-
-      let normalize = (img) => {
-        //  TODO: ONNX not JavaScript https://onnx.ai/onnx/operators/onnx_aionnxml_Normalizer.html
-        let mx = img[0]
-        let mn = mx
-        for (let i = 0; i < img.length; i++) {
-          mx = Math.max(mx, img[i])
-          mn = Math.min(mn, img[i])
-        }
-        let scale = 1 / (mx - mn)
-        for (let i = 0; i < img.length; i++) {
-          img[i] = (img[i] - mn) * scale
-        }
       }
 
       async function setup_segment_anything(vox, dims) {
@@ -211,29 +162,38 @@
         return embedding;
       }
 
-
-
-      async function imageProcessing(vox, dims, topleft, bottomright) {
+      async function imageProcessing(vox, dims, topleft, bottomright, dir) {
         let embedding = await setup_segment_anything(vox, dims);
 
         let session = await ort.InferenceSession.create('https://cs666.org/onnx/sam.onnx');
 
         let input = {};
 
-        console.log(topleft, bottomright);
-
         let uint8arr = Uint8Array.from(atob(embedding[0]), (c) => c.charCodeAt(0));
         embedding = new ort.Tensor("float32", new Float32Array(uint8arr.buffer), [1, 256, 64, 64]);
         input['low_res_embedding'] = embedding;
 
-        let x1 = topleft[0];
-        let y1 = topleft[2];
-        let x2 = bottomright[0];
-        let y2 = bottomright[2];
+        let x, y = 0
+        
+        if (dir === 1) {
+          x = 0
+          y = 2
+        } else if (dir === 2) {
+          x = 1
+          y = 2
+        } else {
+          x = 0
+          y = 1
+        }
+
+        let x1 = topleft[x];
+        let y1 = topleft[y];
+        let x2 = bottomright[x];
+        let y2 = bottomright[y];
 
         input['point_coords'] = new ort.Tensor("float32", new Float32Array([x1, y1, x2, y2]), [1, 2, 2]);
         input['point_labels'] = new ort.Tensor("float32", new Float32Array([2, 3]), [1, 2]);
-        input['image_size'] = new ort.Tensor("float32", new Float32Array([dims[2], dims[0]]));
+        input['image_size'] = new ort.Tensor("float32", new Float32Array([dims[y], dims[x]]));
         input['last_pred_mask'] = new ort.Tensor("float32", new Float32Array(256 * 256), [1, 1, 256, 256]);
         input['has_last_pred'] = new ort.Tensor("float32", new Float32Array([0]));
 
@@ -249,49 +209,41 @@
         return 1 / (1 + Math.exp(-x))
       }
 
-      
-
       async function doDragRelease(info) {
         if (info.tileIdx >= 0 && info.voxStart[0] >= 0) {
+          console.log("Segmenting")
+
+
           await ensureOverlayVolumeLoaded();
-          let slabPad = parseInt(1);
-          let sliceDir = 2;
-          if (info.axCorSag === 1) sliceDir = 1;
-          if (info.axCorSag === 2) sliceDir = 0;
-          info.voxStart[sliceDir] -= slabPad;
-          info.voxEnd[sliceDir] += slabPad;
           
-          let obj = nv1.volumes[0].getVolumeData(info.voxStart, info.voxEnd, 'float32');
+          let obj = nv1.volumes[0].getVolumeData(info.voxStart, info.voxEnd);
           let vox = obj[0];
           let dims = obj[1];
           
-          let outSliceData = await imageProcessing(vox, dims, info.voxStart, info.voxEnd);
+          let outSliceData = await imageProcessing(vox, dims, info.voxStart, info.voxEnd, info.axCorSag);
 
-          let newPixels = grayscale_to_rgba(outSliceData)
+          /*let newPixels = grayscale_to_rgba(outSliceData)
 
-          let pixelsClam = new Uint32Array(newPixels);
+          let pixelsClam = new Uint8ClampedArray(newPixels);
 
-            const threshold = 0.55
-            // model returns logits, so we need to apply sigmoid.
-            for (let i = 0; i < pixelsClam.length; i++) {
-              pixelsClam[i] = sigmoid(pixelsClam[i])
-              pixelsClam[i] = pixelsClam[i] < threshold ? 0 : 1
-            }
+          const threshold = 0.55
+          // model returns logits, so we need to apply sigmoid.
+          for (let i = 0; i < pixelsClam.length; i++) {
+            pixelsClam[i] = sigmoid(pixelsClam[i])
+            pixelsClam[i] = pixelsClam[i] < threshold ? 0 : 1
+          } */
 
-          nv1.volumes[1].setVolumeData(info.voxStart, info.voxEnd, newPixels);
-          console.log(nv1.volumes[1].cal_min)
+          nv1.volumes[1].setVolumeData(info.voxStart, info.voxEnd, outSliceData);
+          
           nv1.volumes[1].setColormap('red')
           nv1.updateGLVolume();
+
+          console.log("Segmented")
         }
       }
 
-      let defaults = {
-        onLocationChange: handleLocationChange,
-      };
-      var nv1 = new niivue.Niivue(defaults);
-      nv1.setRadiologicalConvention(false);
+      var nv1 = new niivue.Niivue();
       nv1.attachTo("gl1");
-      nv1.setSliceType(nv1.sliceTypeMultiplanar);
       nv1.onDragRelease = doDragRelease;
       nv1.opts.dragMode = 5;
       await nv1.loadVolumes([{ url: "./public/stroke.nii.gz" }]);
