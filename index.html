@@ -176,15 +176,16 @@
       var nv1 = new niivue.Niivue();
       nv1.attachTo("gl1");
       nv1.setSliceType(nv1.sliceTypeMultiplanar);
-      let simulateVoxStart = [64, 128, 83];
-      let simulateVoxEnd = [181, 128, 195];
-
-      let simulateAxCorSag = 1;
       await nv1.loadVolumes([{ url: "./public/stroke.nii.gz" }]);
       await ensureOverlayVolumeLoaded();
       window.nv1 = nv1;
 
       console.log("Proccessing segmentation")
+
+      let simulateVoxStart = [64, 128, 83];
+      let simulateVoxEnd = [181, 128, 195];
+
+      let simulateAxCorSag = 1;
 
       await simulate(simulateVoxStart, simulateVoxEnd, simulateAxCorSag);
 
