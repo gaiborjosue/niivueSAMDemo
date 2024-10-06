@@ -14,39 +14,6 @@
     <header>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.10.0/ort-wasm-threaded.min.js" integrity="sha512-pn8Q0yCw+ZwiqvVoSQxYlC8lvVjFMPGjohVmQgLVqeG2ZUE+/6T6BPvtmqY2tODKg3Mu5M9ROfucTLc+U9J4/Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
       <script type="module" src="https://cdn.jsdelivr.net/npm/@niivue/niivue@latest"></script>
-      <label for="opacitySlider">Opacity</label>
-      <input
-        type="range"
-        min="0"
-        max="255"
-        value="128"
-        class="slider"
-        id="opacitySlider"
-      />
-      &nbsp;
-      <button id="selectAllBtn">Process entire volume</button>
-      &nbsp;
-      <label for="thicknessDrop">Selection thickness</label>
-      <select id="thicknessDrop">
-        <option value="0">1</option>
-        <option value="2">5</option>
-        <option value="4" selected>9</option>
-        <option value="5">11</option>
-      </select>
-      &nbsp;
-      <button id="saveBtn">Save Overlay</button>
-      &nbsp;
-      <label for="dragDrop">Drag mode</label>
-      <select id="dragDrop">
-        <option>None</option>
-        <option>Contrast</option>
-        <option>Measurement</option>
-        <option>Pan/Zoom</option>
-        <option>Slicer3D</option>
-        <option selected>Custom Drawing</option>
-      </select>
-      &nbsp;
-      <button id="aboutBtn">About</button>
     </header>
     <main>
       <canvas id="gl1"></canvas>
