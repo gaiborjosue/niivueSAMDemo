@@ -244,6 +244,7 @@
 
       var nv1 = new niivue.Niivue();
       nv1.attachTo("gl1");
+      nv1.setSliceType(nv1.sliceTypeMultiplanar);
       nv1.onDragRelease = doDragRelease;
       nv1.opts.dragMode = 5;
       await nv1.loadVolumes([{ url: "./public/stroke.nii.gz" }]);
