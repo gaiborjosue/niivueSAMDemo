@@ -12,6 +12,7 @@
       <strong>niivue requires JavaScript.</strong>
     </noscript>
     <header>
+
       <label for="opacitySlider">Opacity</label>
       <input
         type="range"
@@ -79,38 +80,6 @@
 
         return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
       }
-
-      function grayscale_to_rgba(grayscale) {
-
-        const rgba = new Uint8Array(grayscale.length * 4);
-
-        for (let i = 0; i < grayscale.length; i++) {
-          const g = grayscale[i];
-          const index = i * 4;
-
-          rgba[index] = g;
-          rgba[index + 1] = g;
-          rgba[index + 2] = g;
-          rgba[index + 3] = 255; 
-        }
-
-        return rgba;
-
-        }
-
-      function rgba_to_grayscale(rgba) {
-
-        const grayscale = new Uint8Array(rgba.length / 4);
-
-        for (let i = 0; i < rgba.length; i += 4) {
-
-          grayscale[i / 4] = rgba[i];
-
-        }
-
-        return grayscale;
-
-        }
 
       async function send_http_post(url, data) {
         return new Promise((resolve, reject) => {
@@ -205,10 +174,6 @@
         });
       }
 
-      const sigmoid = (x) => {
-        return 1 / (1 + Math.exp(-x))
-      }
-
       async function doDragRelease(info) {
         if (info.tileIdx >= 0 && info.voxStart[0] >= 0) {
           console.log("Segmenting")
@@ -242,13 +207,14 @@
         }
       }
 
-      var nv1 = new niivue.Niivue();
+      var nv1 = new Niivue();
       nv1.attachTo("gl1");
       nv1.setSliceType(nv1.sliceTypeMultiplanar);
       nv1.onDragRelease = doDragRelease;
-      nv1.opts.dragMode = 5;
+      nv1.opts.dragMode = 1;
       await nv1.loadVolumes([{ url: "./public/stroke.nii.gz" }]);
       await ensureOverlayVolumeLoaded();
+      window.nv1 = nv1;
     </script>
   </body>
 </html>
