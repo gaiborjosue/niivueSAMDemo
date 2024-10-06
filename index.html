@@ -12,7 +12,8 @@
       <strong>niivue requires JavaScript.</strong>
     </noscript>
     <header>
-
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.10.0/ort-wasm-threaded.min.js" integrity="sha512-pn8Q0yCw+ZwiqvVoSQxYlC8lvVjFMPGjohVmQgLVqeG2ZUE+/6T6BPvtmqY2tODKg3Mu5M9ROfucTLc+U9J4/Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@niivue/niivue@latest"></script>
       <label for="opacitySlider">Opacity</label>
       <input
         type="range"
@@ -106,18 +107,7 @@
       }
 
       async function setup_segment_anything(vox, dims) {
-        console.log("Vox and dims inside SSA");
-        console.log(vox, dims);
         let url = "https://model-zoo.metademolab.com/predictions/segment_everything_box_model";
-
-        // let inputSlice32 = new Float32Array(vox)
-
-        /*let pix = rgba_to_grayscale(inputSlice32)
-
-        let newPixelsClamped = new Uint8ClampedArray(pix);
-         */
-
-        // normalize(inputSlice32)
 
         let pixels = vox;
         let width = dims[0];
@@ -142,79 +132,63 @@
         embedding = new ort.Tensor("float32", new Float32Array(uint8arr.buffer), [1, 256, 64, 64]);
         input['low_res_embedding'] = embedding;
 
-        let x, y = 0
-        
-        if (dir === 1) {
-          x = 0
-          y = 2
-        } else if (dir === 2) {
-          x = 1
-          y = 2
-        } else {
-          x = 0
-          y = 1
-        }
-
-        let x1 = topleft[x];
-        let y1 = topleft[y];
-        let x2 = bottomright[x];
-        let y2 = bottomright[y];
+        let x1 = topleft[0];
+        let y1 = topleft[2];
+        let x2 = bottomright[0];
+        let y2 = bottomright[2];
 
         input['point_coords'] = new ort.Tensor("float32", new Float32Array([x1, y1, x2, y2]), [1, 2, 2]);
         input['point_labels'] = new ort.Tensor("float32", new Float32Array([2, 3]), [1, 2]);
-        input['image_size'] = new ort.Tensor("float32", new Float32Array([dims[y], dims[x]]));
+        input['image_size'] = new ort.Tensor("float32", new Float32Array([dims[2], dims[0]]));
         input['last_pred_mask'] = new ort.Tensor("float32", new Float32Array(256 * 256), [1, 1, 256, 256]);
         input['has_last_pred'] = new ort.Tensor("float32", new Float32Array([0]));
 
         return session.run(input).then(result => {
-          console.log(result);
           return result.output.data;
         }).catch(err => {
           console.error(err);
         });
       }
 
-      async function doDragRelease(info) {
-        if (info.tileIdx >= 0 && info.voxStart[0] >= 0) {
+      async function simulate(start, end, axCorSag) {
           console.log("Segmenting")
 
 
           await ensureOverlayVolumeLoaded();
           
-          let obj = nv1.volumes[0].getVolumeData(info.voxStart, info.voxEnd);
+          let obj = nv1.volumes[0].getVolumeData(start, end);
+
           let vox = obj[0];
           let dims = obj[1];
           
-          let outSliceData = await imageProcessing(vox, dims, info.voxStart, info.voxEnd, info.axCorSag);
+          let outSliceData = await imageProcessing(vox, dims, start, end, axCorSag);
 
-          /*let newPixels = grayscale_to_rgba(outSliceData)
-
-          let pixelsClam = new Uint8ClampedArray(newPixels);
-
-          const threshold = 0.55
-          // model returns logits, so we need to apply sigmoid.
-          for (let i = 0; i < pixelsClam.length; i++) {
-            pixelsClam[i] = sigmoid(pixelsClam[i])
-            pixelsClam[i] = pixelsClam[i] < threshold ? 0 : 1
-          } */
-
-          nv1.volumes[1].setVolumeData(info.voxStart, info.voxEnd, outSliceData);
+          nv1.volumes[1].setVolumeData(start, end, outSliceData);
           
           nv1.volumes[1].setColormap('red')
+          console.log(nv1.volumes[1])
           nv1.updateGLVolume();
 
           console.log("Segmented")
-        }
+        
       }
 
-      var nv1 = new Niivue();
+      var nv1 = new niivue.Niivue();
       nv1.attachTo("gl1");
       nv1.setSliceType(nv1.sliceTypeMultiplanar);
-      nv1.onDragRelease = doDragRelease;
-      nv1.opts.dragMode = 1;
+      let simulateVoxStart = [64, 128, 83];
+      let simulateVoxEnd = [181, 128, 195];
+
+      let simulateAxCorSag = 1;
       await nv1.loadVolumes([{ url: "./public/stroke.nii.gz" }]);
       await ensureOverlayVolumeLoaded();
       window.nv1 = nv1;
+
+      console.log("Proccessing segmentation")
+
+      await simulate(simulateVoxStart, simulateVoxEnd, simulateAxCorSag);
+
+
     </script>
   </body>
 </html>
