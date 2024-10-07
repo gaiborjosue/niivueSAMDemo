@@ -5,13 +5,33 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>NiiVue</title>
+    <style>
+      html {
+        height: auto;
+        min-height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        min-height: 100%;
+        width: 100%;
+        position: absolute;
+        font-family: system-ui, Arial, Helvetica, sans-serif;
+        user-select: none; /* Standard syntax */
+        color: white;
+        background: #303030;
+      }
+      canvas {
+        position: absolute;
+        cursor: crosshair;
+      }
+    </style>
   </head>
   <body>
-    <noscript>
-      <strong>niivue requires JavaScript.</strong>
-    </noscript>
     <header>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.10.0/ort-wasm-threaded.min.js" integrity="sha512-pn8Q0yCw+ZwiqvVoSQxYlC8lvVjFMPGjohVmQgLVqeG2ZUE+/6T6BPvtmqY2tODKg3Mu5M9ROfucTLc+U9J4/Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     </header>
     <main>
       <canvas id="gl1"></canvas>
@@ -140,7 +160,7 @@
       var nv1 = new niivue.Niivue();
       nv1.attachTo("gl1");
       nv1.setSliceType(nv1.sliceTypeMultiplanar);
-      await nv1.loadVolumes([{ url: "./public/stroke.nii.gz" }]);
+      await nv1.loadVolumes([{ url: "https://niivue.github.io/niivue-demo-images/mni152.nii.gz" }]);
       await ensureOverlayVolumeLoaded();
       window.nv1 = nv1;
 
