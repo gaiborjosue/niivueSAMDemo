@@ -5,7 +5,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>NiiVue</title>
-    <link rel="stylesheet" href="./public/niivue.css" />
   </head>
   <body>
     <noscript>
@@ -13,13 +12,13 @@
     </noscript>
     <header>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.10.0/ort-wasm-threaded.min.js" integrity="sha512-pn8Q0yCw+ZwiqvVoSQxYlC8lvVjFMPGjohVmQgLVqeG2ZUE+/6T6BPvtmqY2tODKg3Mu5M9ROfucTLc+U9J4/Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-      <script type="module" src="https://cdn.jsdelivr.net/npm/@niivue/niivue@latest"></script>
     </header>
     <main>
       <canvas id="gl1"></canvas>
     </main>
     <footer id="location">&nbsp;</footer>
     <script type="module" async>
+      import * as niivue from "https://niivue.github.io/niivue/dist/index.js";
 
       function convert_to_png(uint8array, width, height, flip) {
         let offscreen = window.document.createElement('canvas');
